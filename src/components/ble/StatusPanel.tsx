@@ -88,6 +88,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 33,
     borderBottomLeftRadius: 33,
     marginBottom: 9,
+    paddingBottom: 20,
   },
 });
 

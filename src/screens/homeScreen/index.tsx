@@ -3,16 +3,17 @@ import {
   ActivityIndicator,
   FlatList,
   SafeAreaView,
-  StatusBar,
   StyleSheet,
   Switch,
   View,
+  TouchableOpacity,
+  Text,
 } from 'react-native';
-import {ThemeProvider, Button} from 'react-native-elements';
 import {Device} from 'react-native-ble-plx';
+import {useNavigation} from '@react-navigation/native';
 
 import {useBleManager} from '../../services/bleService';
-import {BleObserver} from '../../types/type.d';
+import {BleObserver, HomeScreenNavigationProp} from '../../types/type.d';
 import Constants from '../../constants';
 import AppHeader from '../../components/common/AppHeader';
 import StatusPanel from '../../components/ble/StatusPanel';
@@ -22,6 +23,7 @@ import {colors} from '../../constants/colors';
 const {DEVICE_LIST_LIMIT} = Constants.bleConstants;
 
 const HomeScreen = () => {
+  const navigation = useNavigation<HomeScreenNavigationProp>();
   const {
     bleState,
     isScanning,
@@ -69,6 +71,7 @@ const HomeScreen = () => {
       },
       onDeviceConnected: device => {
         setError(null);
+        navigation.navigate('Ble', {device});
       },
       onDeviceDisconnected: (device, err) => {
         if (err) {
@@ -89,7 +92,7 @@ const HomeScreen = () => {
       },
     };
     setObserver(observer);
-  }, [setObserver]);
+  }, [setObserver, navigation]);
 
   const toggleScan = useCallback(() => {
     if (isScanning) {
@@ -102,12 +105,15 @@ const HomeScreen = () => {
   }, [isScanning, startScan, stopScan]);
 
   const handleConnectPress = useCallback(
-    (device: Device) => {
+    async (device: Device) => {
       if (isConnecting) return;
 
       if (connectedDevice?.id === device.id) {
-        disconnectDevice();
-      } else if (!connectedDevice) {
+        await disconnectDevice();
+      } else if (connectedDevice) {
+        await disconnectDevice();
+        connectToDevice(device.id);
+      } else {
         connectToDevice(device.id);
       }
     },
@@ -119,6 +125,12 @@ const HomeScreen = () => {
       sendData('Test Data');
     }
   }, [connectedDevice, sendData]);
+
+  const handleDisconnectPress = useCallback(async () => {
+    if (connectedDevice) {
+      await disconnectDevice();
+    }
+  }, [connectedDevice, disconnectDevice]);
 
   const isScanSwitchDisabled = isConnecting || !!connectedDevice;
 
@@ -143,21 +155,18 @@ const HomeScreen = () => {
             onValueChange={toggleScan}
             value={isScanning}
             disabled={isScanSwitchDisabled}
-            style={{marginLeft: 5}}
+            style={{marginLeft: 7}}
           />
         }
         rightComponent={
           isConnecting ? (
-            <ActivityIndicator
-              color="#fff"
-              style={{
-                marginRight: 5,
-                marginTop: 5,
-                justifyContent: 'center',
-                alignItems: 'center',
-                alignContent: 'center',
-              }}
-            />
+            <ActivityIndicator color="#fff" style={styles.activityIndicator} />
+          ) : connectedDevice ? (
+            <TouchableOpacity
+              onPress={handleDisconnectPress}
+              style={styles.cutButton}>
+              <Text style={styles.cutButtonText}>Cut</Text>
+            </TouchableOpacity>
           ) : undefined
         }
       />
@@ -198,6 +207,26 @@ const styles = StyleSheet.create({
   sendButtonContainer: {
     marginVertical: 10,
     marginHorizontal: 15,
+  },
+  activityIndicator: {
+    marginRight: 15,
+    marginTop: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cutButton: {
+    marginRight: 15,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.darkerBlackBackground,
+  },
+  cutButtonText: {
+    color: colors.white,
+    fontSize: 12,
+    fontFamily: 'OpenSans-SemiBold',
   },
 });
 

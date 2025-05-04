@@ -43,6 +43,11 @@ const DeviceListItem: React.FC<DeviceListItemProps> = ({
 const styles = StyleSheet.create({
   connectedItem: {
     backgroundColor: '#404350',
+    borderRadius: 10,
+    marginHorizontal: 15,
+    marginVertical: 3,
+    paddingHorizontal: 1,
+    paddingVertical: 6,
   },
   listItem: {
     backgroundColor: '#404350',
