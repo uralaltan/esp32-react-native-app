@@ -109,7 +109,7 @@ const HomeScreen = () => {
       if (isConnecting) return;
 
       if (connectedDevice?.id === device.id) {
-        await disconnectDevice();
+        navigation.navigate('Ble', {device});
       } else if (connectedDevice) {
         await disconnectDevice();
         connectToDevice(device.id);
@@ -117,7 +117,13 @@ const HomeScreen = () => {
         connectToDevice(device.id);
       }
     },
-    [connectedDevice, isConnecting, connectToDevice, disconnectDevice],
+    [
+      connectedDevice,
+      isConnecting,
+      connectToDevice,
+      disconnectDevice,
+      navigation,
+    ],
   );
 
   const handleSendDataPress = useCallback(() => {

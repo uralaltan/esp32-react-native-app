@@ -1,11 +1,11 @@
 import React, {useEffect} from 'react';
-import {View, Text, StyleSheet, Button, TouchableOpacity} from 'react-native'; // Import TouchableOpacity
+import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
 import {useRoute, useNavigation} from '@react-navigation/native';
-import {Icon} from 'react-native-elements'; // Import Icon
 import {BleScreenRouteProp, BleScreenNavigationProp} from '../../types/type.d';
 import {colors} from '../../constants/colors';
 import AppHeader from '../../components/common/AppHeader';
 import {useBleManager} from '../../services/bleService';
+import {icons} from '../../constants/icons';
 
 const BleScreen = () => {
   const route = useRoute<BleScreenRouteProp>();
@@ -37,16 +37,13 @@ const BleScreen = () => {
 
   const renderLeftComponent = () => (
     <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
-      <Icon name="arrow-back" type="material" color={colors.black} size={28} />
+      <Image style={styles.image} source={icons.leftArrow} />
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      <AppHeader
-        title={device.name || 'BLE Device'}
-        leftComponent={renderLeftComponent()}
-      />
+      <AppHeader title={'BLE Manager'} leftComponent={renderLeftComponent()} />
       <View style={styles.content}>
         <Text style={styles.text}>Connected to:</Text>
         <Text style={styles.infoText}>Name: {device.name || 'N/A'}</Text>
@@ -59,8 +56,8 @@ const BleScreen = () => {
 
 const styles = StyleSheet.create({
   backButton: {
-    marginLeft: 10,
-    padding: 5,
+    marginLeft: 5,
+    padding: 3,
   },
   container: {
     flex: 1,
@@ -84,6 +81,10 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginTop: 20,
+  },
+  image: {
+    width: 24,
+    height: 24,
   },
 });
 
