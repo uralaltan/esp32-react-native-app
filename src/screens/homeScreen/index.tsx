@@ -71,7 +71,7 @@ const HomeScreen = () => {
       },
       onDeviceConnected: device => {
         setError(null);
-        navigation.navigate('Ble', {device});
+        navigation.navigate('Ble', {device, sendDataFunction: sendData});
       },
       onDeviceDisconnected: (device, err) => {
         if (err) {
@@ -109,7 +109,7 @@ const HomeScreen = () => {
       if (isConnecting) return;
 
       if (connectedDevice?.id === device.id) {
-        navigation.navigate('Ble', {device});
+        navigation.navigate('Ble', {device, sendDataFunction: sendData});
       } else if (connectedDevice) {
         await disconnectDevice();
         connectToDevice(device.id);
@@ -125,12 +125,6 @@ const HomeScreen = () => {
       navigation,
     ],
   );
-
-  const handleSendDataPress = useCallback(() => {
-    if (connectedDevice) {
-      sendData('Test Data');
-    }
-  }, [connectedDevice, sendData]);
 
   const handleDisconnectPress = useCallback(async () => {
     if (connectedDevice) {

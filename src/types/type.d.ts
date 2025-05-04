@@ -14,7 +14,10 @@ export interface BleObserver {
 
 export type RootStackParamList = {
   Home: undefined;
-  Ble: {device: Device};
+  Ble: {
+    device: Device;
+    sendDataFunction?: (dataString: string) => Promise<void>;
+  };
 };
 
 export type HomeScreenNavigationProp = NativeStackScreenProps<

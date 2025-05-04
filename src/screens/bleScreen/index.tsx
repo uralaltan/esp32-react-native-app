@@ -1,39 +1,43 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useCallback, useState} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
 import {useRoute, useNavigation} from '@react-navigation/native';
 import {BleScreenRouteProp, BleScreenNavigationProp} from '../../types/type.d';
 import {colors} from '../../constants/colors';
 import AppHeader from '../../components/common/AppHeader';
-import {useBleManager} from '../../services/bleService';
 import {icons} from '../../constants/icons';
 
 const BleScreen = () => {
   const route = useRoute<BleScreenRouteProp>();
   const navigation = useNavigation<BleScreenNavigationProp>();
-  const {disconnectDevice} = useBleManager();
-  const {device} = route.params;
-
-  useEffect(() => {
-    return () => {
-      disconnectDevice();
-    };
-  }, [disconnectDevice]);
+  const {device, sendDataFunction} = route.params;
+  const [status, setStatus] = useState<string | null>(null);
 
   const handleGoBack = async () => {
-    await disconnectDevice();
     navigation.goBack();
   };
+
+  const handleSendData = useCallback(async () => {
+    if (sendDataFunction) {
+      try {
+        await sendDataFunction('on');
+        setStatus('Data sent successfully!');
+      } catch (error) {
+        setStatus(`Error sending data: ${error}`);
+      }
+    } else {
+      setStatus('Send function not available');
+    }
+  }, [sendDataFunction]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', e => {
       e.preventDefault();
       (async () => {
-        await disconnectDevice();
         navigation.dispatch(e.data.action);
       })();
     });
     return unsubscribe;
-  }, [navigation, disconnectDevice]);
+  }, [navigation]);
 
   const renderLeftComponent = () => (
     <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
@@ -49,6 +53,10 @@ const BleScreen = () => {
         <Text style={styles.infoText}>Name: {device.name || 'N/A'}</Text>
         <Text style={styles.infoText}>ID: {device.id}</Text>
         <Text style={styles.infoText}>RSSI: {device.rssi}</Text>
+        <TouchableOpacity style={styles.button} onPress={handleSendData}>
+          <Text style={styles.buttonText}>Send "on"</Text>
+        </TouchableOpacity>
+        {status && <Text style={styles.statusText}>{status}</Text>}
       </View>
     </View>
   );
@@ -79,12 +87,31 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     fontFamily: 'OpenSans-Regular',
   },
+  button: {
+    marginTop: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: colors.primary,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontFamily: 'OpenSans-SemiBold',
+  },
   buttonContainer: {
     marginTop: 20,
   },
   image: {
     width: 24,
     height: 24,
+  },
+  statusText: {
+    color: colors.white,
+    fontSize: 16,
+    marginTop: 10,
+    fontFamily: 'OpenSans-Regular',
   },
 });
 
