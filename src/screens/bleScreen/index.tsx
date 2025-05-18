@@ -1,18 +1,38 @@
-import React, {useEffect, useCallback, useState} from 'react';
+import React, {useEffect, useCallback, useState, useRef} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
 import {useRoute, useNavigation} from '@react-navigation/native';
 import {BleScreenRouteProp, BleScreenNavigationProp} from '../../types/type.d';
 import {colors} from '../../constants/colors';
 import AppHeader from '../../components/common/AppHeader';
 import {icons} from '../../constants/icons';
+import {useBleManager} from '../../services/bleService';
+import Constants from '../../constants';
+
+interface SixAxisData {
+  ax: number;
+  ay: number;
+  az: number;
+  gx: number;
+  gy: number;
+  gz: number;
+}
 
 const BleScreen = () => {
   const route = useRoute<BleScreenRouteProp>();
   const navigation = useNavigation<BleScreenNavigationProp>();
   const {device, sendDataFunction} = route.params;
   const [status, setStatus] = useState<string | null>(null);
+  const [imuData, setImuData] = useState<SixAxisData | null>(null);
+  const [isMonitoringImu, setIsMonitoringImu] = useState(false);
+  const {monitorImuData} = useBleManager();
+  const stopMonitoringRef = useRef<(() => void) | null>(null);
+
+  const {SERVICE_UUID, CHARACTERISTIC_UUID} = Constants.bleConstants;
 
   const handleGoBack = async () => {
+    if (isMonitoringImu && stopMonitoringRef.current) {
+      stopMonitoringRef.current();
+    }
     navigation.goBack();
   };
 
@@ -29,15 +49,88 @@ const BleScreen = () => {
     }
   }, [sendDataFunction]);
 
+  const handleToggleImuMonitoring = useCallback(async () => {
+    if (!device) {
+      setStatus('Device not available for IMU monitoring.');
+      return;
+    }
+
+    if (isMonitoringImu) {
+      if (stopMonitoringRef.current) {
+        stopMonitoringRef.current();
+        stopMonitoringRef.current = null;
+      }
+      setIsMonitoringImu(false);
+      setImuData(null);
+      setStatus('IMU monitoring stopped.');
+    } else {
+      // Start monitoring
+      setStatus('Starting IMU monitoring...');
+      try {
+        const cleanup = monitorImuData(
+          device.id,
+          SERVICE_UUID,
+          CHARACTERISTIC_UUID,
+          receivedData => {
+            setImuData(receivedData);
+          },
+          error => {
+            setStatus(`IMU Monitoring Error: ${error.message}`);
+            setIsMonitoringImu(false);
+            if (stopMonitoringRef.current) {
+              stopMonitoringRef.current();
+              stopMonitoringRef.current = null;
+            }
+          },
+        );
+        stopMonitoringRef.current = cleanup;
+        setIsMonitoringImu(true);
+        setStatus('IMU monitoring started.');
+      } catch (error: any) {
+        setStatus(`Failed to start IMU monitoring: ${error.message}`);
+        setIsMonitoringImu(false);
+      }
+    }
+  }, [
+    device,
+    isMonitoringImu,
+    monitorImuData,
+    SERVICE_UUID,
+    CHARACTERISTIC_UUID,
+  ]);
+
   useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', e => {
-      e.preventDefault();
-      (async () => {
+    const unsubscribeFocus = navigation.addListener('focus', () => {});
+
+    const unsubscribeBeforeRemove = navigation.addListener(
+      'beforeRemove',
+      e => {
+        e.preventDefault();
+
+        if (stopMonitoringRef.current) {
+          console.log(
+            'Stopping IMU monitoring due to screen removal (beforeRemove)...',
+          );
+          stopMonitoringRef.current();
+          stopMonitoringRef.current = null;
+          setIsMonitoringImu(false);
+        }
         navigation.dispatch(e.data.action);
-      })();
-    });
-    return unsubscribe;
-  }, [navigation]);
+      },
+    );
+
+    return () => {
+      unsubscribeFocus();
+      unsubscribeBeforeRemove();
+      if (stopMonitoringRef.current) {
+        console.log(
+          'Stopping IMU monitoring due to component unmount (useEffect cleanup)...',
+        );
+        stopMonitoringRef.current();
+        stopMonitoringRef.current = null;
+      }
+    };
+  }, [navigation, setIsMonitoringImu]);
 
   const renderLeftComponent = () => (
     <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
@@ -56,7 +149,28 @@ const BleScreen = () => {
         <TouchableOpacity style={styles.button} onPress={handleSendData}>
           <Text style={styles.buttonText}>Send "on"</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleToggleImuMonitoring}>
+          <Text style={styles.buttonText}>
+            {isMonitoringImu ? 'Stop IMU Monitoring' : 'Start IMU Monitoring'}
+          </Text>
+        </TouchableOpacity>
+
         {status && <Text style={styles.statusText}>{status}</Text>}
+
+        {imuData && (
+          <View style={styles.imuDataContainer}>
+            <Text style={styles.text}>IMU Data:</Text>
+            <Text style={styles.infoText}>Ax: {imuData.ax}</Text>
+            <Text style={styles.infoText}>Ay: {imuData.ay}</Text>
+            <Text style={styles.infoText}>Az: {imuData.az}</Text>
+            <Text style={styles.infoText}>Gx: {imuData.gx}</Text>
+            <Text style={styles.infoText}>Gy: {imuData.gy}</Text>
+            <Text style={styles.infoText}>Gz: {imuData.gz}</Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -112,6 +226,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 10,
     fontFamily: 'OpenSans-Regular',
+  },
+  imuDataContainer: {
+    marginTop: 20,
+    padding: 10,
+    backgroundColor: colors.black,
+    borderRadius: 5,
   },
 });
 

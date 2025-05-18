@@ -6,6 +6,15 @@ import Constants from '../constants';
 
 const {SERVICE_UUID, CHARACTERISTIC_UUID} = Constants.bleConstants;
 
+interface SixAxisData {
+  ax: number;
+  ay: number;
+  az: number;
+  gx: number;
+  gy: number;
+  gz: number;
+}
+
 export const useBleManager = () => {
   const bleManager = useRef(new BleManager()).current;
   const [bleState, setBleState] = useState<State>(State.Unknown);
@@ -194,6 +203,73 @@ export const useBleManager = () => {
     [bleManager, connectedDevice],
   );
 
+  const monitorImuData = useCallback(
+    (
+      deviceId: string,
+      serviceUUID: string,
+      characteristicUUID: string,
+      onDataReceived: (data: SixAxisData) => void,
+      onError: (error: any) => void,
+    ): (() => void) => {
+      if (!connectedDevice || connectedDevice.id !== deviceId) {
+        onError(
+          new Error('Device not connected or mismatched ID for monitoring.'),
+        );
+        return () => {};
+      }
+
+      console.log(
+        `Attempting to monitor IMU: D:${deviceId}, S:${serviceUUID}, C:${characteristicUUID}`,
+      );
+      const transactionId = `monitor-${deviceId}-${characteristicUUID}`;
+      const subscription = bleManager.monitorCharacteristicForDevice(
+        deviceId,
+        serviceUUID,
+        characteristicUUID,
+        (error, characteristic) => {
+          if (error) {
+            console.error(
+              `Error monitoring characteristic ${characteristicUUID}:`,
+              error,
+            );
+            onError(error);
+            return;
+          }
+          if (characteristic?.value) {
+            try {
+              const rawData = Buffer.from(characteristic.value, 'base64');
+              if (rawData.length === 12) {
+                const ax = rawData.readInt16LE(0);
+                const ay = rawData.readInt16LE(2);
+                const az = rawData.readInt16LE(4);
+                const gx = rawData.readInt16LE(6);
+                const gy = rawData.readInt16LE(8);
+                const gz = rawData.readInt16LE(10);
+                onDataReceived({ax, ay, az, gx, gy, gz});
+              } else {
+              }
+            } catch (parseError) {
+              console.error(
+                `Error parsing characteristic ${characteristicUUID} value:`,
+                parseError,
+              );
+              onError(parseError);
+            }
+          }
+        },
+        transactionId,
+      );
+
+      return () => {
+        console.log(
+          `Stopping IMU monitoring for characteristic ${characteristicUUID} on device ${deviceId}`,
+        );
+        subscription.remove();
+      };
+    },
+    [bleManager, connectedDevice],
+  );
+
   return {
     bleState,
     isScanning,
@@ -205,5 +281,6 @@ export const useBleManager = () => {
     connectToDevice,
     disconnectDevice,
     sendData,
+    monitorImuData,
   };
 };
