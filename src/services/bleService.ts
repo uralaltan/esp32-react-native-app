@@ -1,5 +1,11 @@
 import {useState, useEffect, useRef, useCallback} from 'react';
-import {BleManager, State, Device, Subscription} from 'react-native-ble-plx';
+import {
+  BleManager,
+  State,
+  Device,
+  Subscription,
+  LogLevel,
+} from 'react-native-ble-plx';
 import {Buffer} from 'buffer';
 import {BleObserver} from '../types/type.d';
 import Constants from '../constants';
@@ -17,6 +23,7 @@ interface SixAxisData {
 
 export const useBleManager = () => {
   const bleManager = useRef(new BleManager()).current;
+  bleManager.setLogLevel(LogLevel.Verbose);
   const [bleState, setBleState] = useState<State>(State.Unknown);
   const [isScanning, setIsScanning] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -203,72 +210,40 @@ export const useBleManager = () => {
     [bleManager, connectedDevice],
   );
 
-  const monitorImuData = useCallback(
-    (
-      deviceId: string,
-      serviceUUID: string,
-      characteristicUUID: string,
-      onDataReceived: (data: SixAxisData) => void,
-      onError: (error: any) => void,
-    ): (() => void) => {
-      if (!connectedDevice || connectedDevice.id !== deviceId) {
-        onError(
-          new Error('Device not connected or mismatched ID for monitoring.'),
-        );
-        return () => {};
-      }
-
-      console.log(
-        `Attempting to monitor IMU: D:${deviceId}, S:${serviceUUID}, C:${characteristicUUID}`,
-      );
-      const transactionId = `monitor-${deviceId}-${characteristicUUID}`;
-      const subscription = bleManager.monitorCharacteristicForDevice(
-        deviceId,
-        serviceUUID,
-        characteristicUUID,
-        (error, characteristic) => {
-          if (error) {
-            console.error(
-              `Error monitoring characteristic ${characteristicUUID}:`,
-              error,
-            );
-            onError(error);
-            return;
+  const monitorImuData = (
+    deviceId: string,
+    serviceUUID: string,
+    characteristicUUID: string,
+    onData: (d: SixAxisData) => void,
+    onError: (e: any) => void,
+  ) => {
+    console.log(`Subscribing to indications on ${CHARACTERISTIC_UUID}`);
+    const subscription = bleManager.monitorCharacteristicForDevice(
+      deviceId,
+      SERVICE_UUID,
+      CHARACTERISTIC_UUID,
+      (error, characteristic) => {
+        if (error) {
+          return onError(error);
+        }
+        if (characteristic?.value) {
+          const raw = Buffer.from(characteristic.value, 'base64');
+          if (raw.length === 12) {
+            onData({
+              ax: raw.readInt16LE(0),
+              ay: raw.readInt16LE(2),
+              az: raw.readInt16LE(4),
+              gx: raw.readInt16LE(6),
+              gy: raw.readInt16LE(8),
+              gz: raw.readInt16LE(10),
+            });
           }
-          if (characteristic?.value) {
-            try {
-              const rawData = Buffer.from(characteristic.value, 'base64');
-              if (rawData.length === 12) {
-                const ax = rawData.readInt16LE(0);
-                const ay = rawData.readInt16LE(2);
-                const az = rawData.readInt16LE(4);
-                const gx = rawData.readInt16LE(6);
-                const gy = rawData.readInt16LE(8);
-                const gz = rawData.readInt16LE(10);
-                onDataReceived({ax, ay, az, gx, gy, gz});
-              } else {
-              }
-            } catch (parseError) {
-              console.error(
-                `Error parsing characteristic ${characteristicUUID} value:`,
-                parseError,
-              );
-              onError(parseError);
-            }
-          }
-        },
-        transactionId,
-      );
-
-      return () => {
-        console.log(
-          `Stopping IMU monitoring for characteristic ${characteristicUUID} on device ${deviceId}`,
-        );
-        subscription.remove();
-      };
-    },
-    [bleManager, connectedDevice],
-  );
+        }
+      },
+      `imu-monitor-${deviceId}`,
+    );
+    return () => subscription.remove();
+  };
 
   return {
     bleState,

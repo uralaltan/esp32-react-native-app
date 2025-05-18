@@ -24,11 +24,22 @@ export type HomeScreenNavigationProp = NativeStackScreenProps<
   RootStackParamList,
   'Home'
 >['navigation'];
+
 export type BleScreenRouteProp = NativeStackScreenProps<
   RootStackParamList,
   'Ble'
 >['route'];
+
 export type BleScreenNavigationProp = NativeStackScreenProps<
   RootStackParamList,
   'Ble'
 >['navigation'];
+
+declare interface SixAxisData {
+  ax: number;
+  ay: number;
+  az: number;
+  gx: number;
+  gy: number;
+  gz: number;
+}

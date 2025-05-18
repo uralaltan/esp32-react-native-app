@@ -1,21 +1,16 @@
 import React, {useEffect, useCallback, useState, useRef} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
 import {useRoute, useNavigation} from '@react-navigation/native';
-import {BleScreenRouteProp, BleScreenNavigationProp} from '../../types/type.d';
+import {
+  BleScreenRouteProp,
+  BleScreenNavigationProp,
+  SixAxisData,
+} from '../../types/type.d';
 import {colors} from '../../constants/colors';
 import AppHeader from '../../components/common/AppHeader';
 import {icons} from '../../constants/icons';
 import {useBleManager} from '../../services/bleService';
 import Constants from '../../constants';
-
-interface SixAxisData {
-  ax: number;
-  ay: number;
-  az: number;
-  gx: number;
-  gy: number;
-  gz: number;
-}
 
 const BleScreen = () => {
   const route = useRoute<BleScreenRouteProp>();
@@ -64,7 +59,6 @@ const BleScreen = () => {
       setImuData(null);
       setStatus('IMU monitoring stopped.');
     } else {
-      // Start monitoring
       setStatus('Starting IMU monitoring...');
       try {
         const cleanup = monitorImuData(
