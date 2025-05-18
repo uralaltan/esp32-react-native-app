@@ -31,19 +31,6 @@ const BleScreen = () => {
     navigation.goBack();
   };
 
-  const handleSendData = useCallback(async () => {
-    if (sendDataFunction) {
-      try {
-        await sendDataFunction('on');
-        setStatus('Data sent successfully!');
-      } catch (error) {
-        setStatus(`Error sending data: ${error}`);
-      }
-    } else {
-      setStatus('Send function not available');
-    }
-  }, [sendDataFunction]);
-
   const handleToggleImuMonitoring = useCallback(async () => {
     if (!device) {
       setStatus('Device not available for IMU monitoring.');
@@ -139,10 +126,6 @@ const BleScreen = () => {
         <Text style={styles.text}>Connected to:</Text>
         <Text style={styles.infoText}>Name: {device.name || 'N/A'}</Text>
         <Text style={styles.infoText}>ID: {device.id}</Text>
-        <Text style={styles.infoText}>RSSI: {device.rssi}</Text>
-        <TouchableOpacity style={styles.button} onPress={handleSendData}>
-          <Text style={styles.buttonText}>Send "on"</Text>
-        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.button}
@@ -224,7 +207,7 @@ const styles = StyleSheet.create({
   imuDataContainer: {
     marginTop: 20,
     padding: 10,
-    backgroundColor: colors.black,
+    backgroundColor: colors.blackBackground,
     borderRadius: 5,
   },
 });
