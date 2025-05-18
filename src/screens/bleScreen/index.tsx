@@ -292,7 +292,7 @@ const BleScreen = () => {
           ]}
           onPress={handleShareExcel}
           disabled={!canShareExcel}>
-          <Text style={styles.buttonText}>Share Excel</Text>{' '}
+          <Text style={styles.buttonText}>Share Excel</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.success,
   },
   downloadButton: {
-    backgroundColor: colors.green,
+    backgroundColor: colors.successLight,
     marginTop: 10,
   },
   disabledButton: {
