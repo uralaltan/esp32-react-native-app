@@ -35,11 +35,31 @@ export type BleScreenNavigationProp = NativeStackScreenProps<
   'Ble'
 >['navigation'];
 
-declare interface SixAxisData {
+export interface SixAxisData {
   ax: number;
   ay: number;
   az: number;
   gx: number;
   gy: number;
   gz: number;
+}
+
+export interface IMUDataRow {
+  ax: string;
+  ay: string;
+  az: string;
+  gx: string;
+  gy: string;
+  gz: string;
+  classification: number;
+}
+
+export interface IMURecording {
+  axData: number[];
+  ayData: number[];
+  azData: number[];
+  gxData: number[];
+  gyData: number[];
+  gzData: number[];
+  isFall: number;
 }

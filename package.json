@@ -17,10 +17,13 @@
     "react-native": "0.79.2",
     "react-native-ble-plx": "^3.5.0",
     "react-native-elements": "^3.4.3",
+    "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "^2.25.0",
     "react-native-reanimated": "^3.17.5",
     "react-native-safe-area-context": "^5.4.0",
-    "react-native-screens": "^4.10.0"
+    "react-native-screens": "^4.10.0",
+    "react-native-share": "^12.0.11",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

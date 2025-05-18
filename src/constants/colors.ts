@@ -7,6 +7,10 @@ const textSecondary = '#757575';
 const yellow = '#f7be00';
 const blackBackground = '#404350';
 const darkerBlackBackground = '#1c1e33';
+const danger = '#FF0000';
+const success = '#00FF00';
+const green = '#00FF00';
+const grey = '#808080';
 
 export const colors = {
   white,
@@ -18,4 +22,8 @@ export const colors = {
   yellow,
   blackBackground,
   darkerBlackBackground,
+  danger,
+  success,
+  green,
+  grey,
 };
